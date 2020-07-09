@@ -1,0 +1,7 @@
+version: '2'
+services:
+  redisgraph:
+    image: redislabs/redisgraph
+    container_name: "redisgraph"
+    ports:
+      - "127.0.0.1:6379:6379"
