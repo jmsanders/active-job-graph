@@ -36,5 +36,23 @@ module ActiveJob
         end
       end
     end
+
+    describe ".put" do
+      subject { described_class.put(:job => job, :client => redis) }
+
+      let(:job) { ActiveJob::Base.new }
+
+      it { expect { subject }.to change { redis.query("MATCH (n) RETURN (n)").resultset.count }.by(1) }
+      it { expect(subject).to include({ "job_id" => job.job_id }) }
+      it { expect(subject).to include({ "queue" => job.queue_name }) }
+      it { expect(subject).to include({ "name" => job.class.to_s }) }
+
+      context "with arguments" do
+        let(:job) { ActiveJob::Base.new(:foo => "hello", :bar => "goodbye") }
+
+        it { expect(subject).to include({ "foo" => "hello" }) }
+        it { expect(subject).to include({ "bar" => "goodbye" }) }
+      end
+    end
   end
 end
