@@ -26,5 +26,13 @@ module ActiveJob
 
       client.query("CREATE (j:job {#{properties}}) RETURN (j)").resultset.first.first
     end
+
+    def self.append(job:, client:, **kwargs)
+      properties = kwargs.map do |key, value|
+        "j.#{key} = '#{value}'"
+      end.join(", ")
+
+      client.query("MATCH (j:job {job_id: '#{job.job_id}'}) SET #{properties} RETURN (j)").resultset.first.first
+    end
   end
 end

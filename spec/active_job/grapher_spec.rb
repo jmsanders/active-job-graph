@@ -54,5 +54,16 @@ module ActiveJob
         it { expect(subject).to include({ "bar" => "goodbye" }) }
       end
     end
+
+    describe ".append" do
+      subject { described_class.append(:job => job, :client => redis, :foo => "hello", :bar => "goodbye") }
+
+      let(:job) { ActiveJob::Base.new }
+
+      before { described_class.put(:job => job, :client => redis) }
+
+      it { expect(subject).to include({ "foo" => "hello" }) }
+      it { expect(subject).to include({ "bar" => "goodbye" }) }
+    end
   end
 end

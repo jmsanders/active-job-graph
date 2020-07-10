@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/jmsanders/redisgraph-rb.git
+  revision: a07fc515545c9fc744c52980b571de8e81015fec
+  specs:
+    redisgraph (2.0.0)
+      redis (~> 4)
+      terminal-table (~> 1, >= 1.8)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -27,9 +35,6 @@ GEM
       byebug (~> 11.0)
       pry (~> 0.13.0)
     redis (4.2.1)
-    redisgraph (2.0.0)
-      redis (~> 4)
-      terminal-table (~> 1, >= 1.8)
     rspec (3.9.0)
       rspec-core (~> 3.9.0)
       rspec-expectations (~> 3.9.0)
@@ -57,7 +62,7 @@ PLATFORMS
 DEPENDENCIES
   activejob
   pry-byebug
-  redisgraph
+  redisgraph!
   rspec
 
 BUNDLED WITH
