@@ -65,5 +65,28 @@ module ActiveJob
       it { expect(subject).to include({ "foo" => "hello" }) }
       it { expect(subject).to include({ "bar" => "goodbye" }) }
     end
+
+    describe ".enqueued" do
+      subject { described_class.enqueued(:from => enqueuing_job, :to => enqueued_job, :client => redis) }
+
+      let(:enqueuing_job) { ActiveJob::Base.new }
+      let(:enqueued_job) { ActiveJob::Base.new }
+
+      before do
+        described_class.put(:job => enqueuing_job, :client => redis)
+        described_class.put(:job => enqueued_job, :client => redis)
+      end
+
+      it { expect { subject }.to change { redis.query("MATCH (n)-[:enqueued]->(m) RETURN n, m").resultset.count }.by(1) }
+      it { expect(subject).to eq(true) }
+
+      context "when at least one node doesn't exist" do
+        let(:bad_job) { ActiveJob::Base.new }
+
+        it { expect(described_class.enqueued(:from => enqueuing_job, :to => bad_job, :client => redis)).to eq(false) }
+        it { expect(described_class.enqueued(:from => bad_job, :to => enqueuing_job, :client => redis)).to eq(false) }
+        it { expect(described_class.enqueued(:from => bad_job, :to => bad_job, :client => redis)).to eq(false) }
+      end
+    end
   end
 end

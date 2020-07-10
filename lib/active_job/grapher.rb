@@ -34,5 +34,11 @@ module ActiveJob
 
       client.query("MATCH (j:job {job_id: '#{job.job_id}'}) SET #{properties} RETURN (j)").resultset.first.first
     end
+
+    def self.enqueued(from:, to:, client:)
+      result = client.query("MATCH (f {job_id: '#{from.job_id}'}), (t {job_id: '#{to.job_id}'}) CREATE (f)-[:enqueued]->(t)")
+
+      result.stats[:relationships_created].to_i > 0
+    end
   end
 end
