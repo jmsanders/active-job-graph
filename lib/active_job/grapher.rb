@@ -41,15 +41,15 @@ module ActiveJob
         "#{key}: '#{value}'"
       end.join(", ")
 
-      client.query("CREATE (j:job {#{properties}}) RETURN (j)").resultset.first.first
+      client.query("CREATE (n {#{properties}}) RETURN (n)").resultset.first.first
     end
 
     def self.append(job:, client:, **kwargs)
       properties = kwargs.map do |key, value|
-        "j.#{key} = '#{value}'"
+        "n.#{key} = '#{value}'"
       end.join(", ")
 
-      client.query("MATCH (j:job {job_id: '#{job.job_id}'}) SET #{properties} RETURN (j)").resultset.first.first
+      client.query("MATCH (n {job_id: '#{job.job_id}'}) SET #{properties} RETURN (n)").resultset.first&.first
     end
 
     def self.enqueued(from:, to:, client:)
