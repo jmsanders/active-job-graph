@@ -31,8 +31,8 @@ module ActiveJob
 
         before { EnqueuingJob.perform_later }
 
-        it "adds a node" do
-          expect { perform_enqueued_jobs }.to change { redis.query("MATCH (n) RETURN (n)").resultset.count }.by(1)
+        it "relates the two nodes" do
+          expect { perform_enqueued_jobs }.to change { redis.query("MATCH (n)-[:enqueued]->(m) RETURN n, m").resultset.count }.by(1)
         end
       end
     end

@@ -10,6 +10,13 @@ module ActiveJob
         redis = RedisGraph.new("active_job")
         ActiveJob::Grapher.put(:job => job, :client => redis)
 
+        enqueuing_job = Struct.new(:job_id)
+        ActiveJob::Grapher.enqueued(
+          :from => enqueuing_job.new(ActiveJob::Base.logger.formatter.current_tags.last),
+          :to => job,
+          :client => redis
+        )
+
         block.call
       end
     end
