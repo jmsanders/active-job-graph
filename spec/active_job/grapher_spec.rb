@@ -1,6 +1,8 @@
-require "active_job"
 require "active_job/grapher"
+
+require "active_job"
 require "redisgraph"
+require "clients/redis_graph_client"
 
 module ActiveJob
   RSpec.describe Grapher do
@@ -13,18 +15,18 @@ module ActiveJob
       def perform; end
     end
 
-    let(:redis) { RedisGraph.new("active_job") }
+    let(:client) { RedisGraphClient.new }
 
-    after { redis.connection.flushall }
+    before { client.connection.connection.flushall }
 
     context "when a job is enqueued" do
       it "adds a node" do
-        expect { GraphingJob.perform_later }.to change { redis.query("MATCH (n) RETURN (n)").resultset.count }.by(1)
+        expect { GraphingJob.perform_later }.to change { client.connection.query("MATCH (n) RETURN (n)").resultset.count }.by(1)
       end
 
       it "includes the enqueued_at time" do
-        expect { GraphingJob.perform_later}.to change{ redis.query("MATCH (n) RETURN (n.enqueued_at)").resultset }
-        expect(redis.query("MATCH (n) RETURN (n.enqueued_at)").resultset.first.first).to_not eq(nil)
+        expect { GraphingJob.perform_later}.to change{ client.connection.query("MATCH (n) RETURN (n.enqueued_at)").resultset }
+        expect(client.connection.query("MATCH (n) RETURN (n.enqueued_at)").resultset.first.first).to_not eq(nil)
       end
 
       context "from another job" do
@@ -37,7 +39,7 @@ module ActiveJob
         before { EnqueuingJob.perform_later }
 
         it "relates the two nodes" do
-          expect { perform_enqueued_jobs }.to change { redis.query("MATCH (n)-[:enqueued]->(m) RETURN n, m").resultset.count }.by(1)
+          expect { perform_enqueued_jobs }.to change { client.connection.query("MATCH (n)-[:enqueued]->(m) RETURN n, m").resultset.count }.by(1)
         end
       end
     end
@@ -45,63 +47,11 @@ module ActiveJob
     context "when a job is performed" do
       before { GraphingJob.perform_later }
       it "appends the start and finished times" do
-        expect { perform_enqueued_jobs }.to change{ redis.query("MATCH (n) RETURN n.started_at, n.finished_at").resultset }
+        expect { perform_enqueued_jobs }.to change{ client.connection.query("MATCH (n) RETURN n.started_at, n.finished_at").resultset }
 
-        started_at = redis.query("MATCH (n) RETURN (n.started_at)").resultset.first.first
-        finished_at = redis.query("MATCH (n) RETURN (n.finished_at)").resultset.first.first
+        started_at = client.connection.query("MATCH (n) RETURN (n.started_at)").resultset.first.first
+        finished_at = client.connection.query("MATCH (n) RETURN (n.finished_at)").resultset.first.first
         expect(finished_at).to be > started_at
-      end
-    end
-
-    describe ".put" do
-      subject { described_class.put(:job => job, :client => redis) }
-
-      let(:job) { ActiveJob::Base.new }
-
-      it { expect { subject }.to change { redis.query("MATCH (n) RETURN (n)").resultset.count }.by(1) }
-      it { expect(subject).to include({ "job_id" => job.job_id }) }
-      it { expect(subject).to include({ "queue" => job.queue_name }) }
-      it { expect(subject).to include({ "name" => job.class.to_s }) }
-
-      context "with arguments" do
-        let(:job) { ActiveJob::Base.new(:foo => "hello", :bar => "goodbye") }
-
-        it { expect(subject).to include({ "foo" => "hello" }) }
-        it { expect(subject).to include({ "bar" => "goodbye" }) }
-      end
-    end
-
-    describe ".append" do
-      subject { described_class.append(:job => job, :client => redis, :foo => "hello", :bar => "goodbye") }
-
-      let(:job) { ActiveJob::Base.new }
-
-      before { described_class.put(:job => job, :client => redis) }
-
-      it { expect(subject).to include({ "foo" => "hello" }) }
-      it { expect(subject).to include({ "bar" => "goodbye" }) }
-    end
-
-    describe ".enqueued" do
-      subject { described_class.enqueued(:from => enqueuing_job, :to => enqueued_job, :client => redis) }
-
-      let(:enqueuing_job) { ActiveJob::Base.new }
-      let(:enqueued_job) { ActiveJob::Base.new }
-
-      before do
-        described_class.put(:job => enqueuing_job, :client => redis)
-        described_class.put(:job => enqueued_job, :client => redis)
-      end
-
-      it { expect { subject }.to change { redis.query("MATCH (n)-[:enqueued]->(m) RETURN n, m").resultset.count }.by(1) }
-      it { expect(subject).to eq(true) }
-
-      context "when at least one node doesn't exist" do
-        let(:bad_job) { ActiveJob::Base.new }
-
-        it { expect(described_class.enqueued(:from => enqueuing_job, :to => bad_job, :client => redis)).to eq(false) }
-        it { expect(described_class.enqueued(:from => bad_job, :to => enqueuing_job, :client => redis)).to eq(false) }
-        it { expect(described_class.enqueued(:from => bad_job, :to => bad_job, :client => redis)).to eq(false) }
       end
     end
   end
