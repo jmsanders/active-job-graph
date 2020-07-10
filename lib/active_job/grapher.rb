@@ -9,6 +9,7 @@ module ActiveJob
       around_enqueue do |job, block|
         redis = RedisGraph.new("active_job")
         ActiveJob::Grapher.put(:job => job, :client => redis)
+        ActiveJob::Grapher.append(:job => job, :client => redis, :enqueued_at => Time.now.to_f)
 
         enqueuing_job = Struct.new(:job_id)
         ActiveJob::Grapher.enqueued(

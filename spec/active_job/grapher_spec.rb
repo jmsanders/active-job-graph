@@ -22,6 +22,11 @@ module ActiveJob
         expect { GraphingJob.perform_later }.to change { redis.query("MATCH (n) RETURN (n)").resultset.count }.by(1)
       end
 
+      it "includes the enqueued_at time" do
+        expect { GraphingJob.perform_later}.to change{ redis.query("MATCH (n) RETURN (n.enqueued_at)").resultset }
+        expect(redis.query("MATCH (n) RETURN (n.enqueued_at)").resultset.first.first).to_not eq(nil)
+      end
+
       context "from another job" do
         class EnqueuingJob < GraphingJob
           def perform
