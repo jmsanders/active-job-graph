@@ -16,6 +16,5 @@ bundle exec rspec
 
 - [ ] Make the graph database client configurable
 - [ ] Support graph database backends beyond [RedisGraph](https://github.com/RedisGraph/RedisGraph)
-- [ ] Append timestamps to nodes when enqueued, when performing starts, and when performing finishes
 - [ ] Represent failures and retries
 - [ ] Add a demo

@@ -20,6 +20,15 @@ module ActiveJob
 
         block.call
       end
+
+      around_perform do |job, block|
+        redis = RedisGraph.new("active_job")
+        ActiveJob::Grapher.append(:job => job, :client => redis, :started_at => Time.now.to_f)
+
+        block.call
+
+        ActiveJob::Grapher.append(:job => job, :client => redis, :finished_at => Time.now.to_f)
+      end
     end
 
     def self.put(job:, client:)

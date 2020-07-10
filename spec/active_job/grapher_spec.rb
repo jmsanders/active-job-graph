@@ -42,6 +42,17 @@ module ActiveJob
       end
     end
 
+    context "when a job is performed" do
+      before { GraphingJob.perform_later }
+      it "appends the start and finished times" do
+        expect { perform_enqueued_jobs }.to change{ redis.query("MATCH (n) RETURN n.started_at, n.finished_at").resultset }
+
+        started_at = redis.query("MATCH (n) RETURN (n.started_at)").resultset.first.first
+        finished_at = redis.query("MATCH (n) RETURN (n.finished_at)").resultset.first.first
+        expect(finished_at).to be > started_at
+      end
+    end
+
     describe ".put" do
       subject { described_class.put(:job => job, :client => redis) }
 
